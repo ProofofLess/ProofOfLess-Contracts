@@ -3,7 +3,7 @@
 # 🪜 Installation
 To use this app locally, you'll need to do the following:
 
-# ✨ USER FLOW : 
+# ✨ USER FLOW 
 1 / user supply funds to pool for multiple entries if desired  
 2 / users subscribe to waiting list (join next quest auto)
 3.1 / end of previous quest period
@@ -12,14 +12,13 @@ To use this app locally, you'll need to do the following:
 5 / oracle initialize new cycle + distribute reward to winners 
 6 / oracle subscribe waiting list and clean users without required funds 
 
-# 🪄 CMD (Run Local Polygon Fork Testing)
+# 🪄 CMD (Run Local Polygon Fork Testing) 
 run thes command into the project file directory
 - `cp .env.example .env`
 - `npm install`
 - `npx hardhat clean`
 - `npx hardhat compile`
 - `npx hardhat test`
-```
 
 # 📖 Deployed Address [Polygon]
 -
