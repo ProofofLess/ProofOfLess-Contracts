@@ -62,7 +62,7 @@ const config: HardhatUserConfig = {
       url: process.env.MUMBAI_URL,
       gasPrice: "auto",
       accounts: {
-        mnemonic: process.env.MNEMONIC,
+        mnemonic: process.env.SECRET_KEY,
       },
     }
   },

@@ -13,14 +13,21 @@ contract MemberShip is ERC721, ERC721URIStorage, Pausable, AccessControl {
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     Counters.Counter private _tokenIdCounter;
-
+    // userAddress => tokenId => bool
     mapping(address => mapping(uint256 => bool)) public isOwnerOf;
+    // tokenId => userAddress => UserProfil
     mapping(uint256 => mapping(address => UserProfil)) public userProfil;
+    // userAddress => bool
     mapping(address => bool) public isOwner;
     uint256 public maxCap;
 
+    string public membershipUri;
+
     struct UserProfil {
         address owner;
+        string userName;
+        string email;
+        string twitterUserName;
         uint256 experience;
         uint256 questAccepted;
         uint256 questCompleted;
@@ -38,9 +45,62 @@ contract MemberShip is ERC721, ERC721URIStorage, Pausable, AccessControl {
         _grantRole(PAUSER_ROLE, _gnosis);
         _grantRole(MINTER_ROLE, _gnosis);
         maxCap = 1;
+        membershipUri = "UriTestNeedGraphiste<3";
     }
 
-    function updateUserProfil(
+    function updateUserName(uint256 _tokenId, address _user, string memory _newUserName) public returns(string memory){
+        require(ownerOf(_tokenId) == _user, "User Not Actual Owner");
+        UserProfil storage up = userProfil[_tokenId][_user];
+        return up.userName = _newUserName;
+    }
+
+    function updateEmail(uint256 _tokenId, address _user, string memory _newEmail) public returns(string memory){
+        require(ownerOf(_tokenId) == _user, "User Not Actual Owner");
+        UserProfil storage up = userProfil[_tokenId][_user];
+        return up.email = _newEmail;
+    }
+
+    function updateTwitterUserName(uint256 _tokenId, address _user, string memory _newTwitterUserName) public returns(string memory){
+        require(ownerOf(_tokenId) == _user, "User Not Actual Owner");
+        UserProfil storage up = userProfil[_tokenId][_user];
+        return up.twitterUserName = _newTwitterUserName;
+    }  
+
+    function safeMint(
+        address _to, 
+        string memory _userName, 
+        string memory _email, 
+        string memory _twitterUserName
+    ) public onlyRole(MINTER_ROLE) returns(UserProfil memory){
+        if(
+            !hasRole(DEFAULT_ADMIN_ROLE, msg.sender) 
+            && !hasRole(DEFAULT_ADMIN_ROLE, _to)
+        ) {
+            require(maxCap >= balanceOf(msg.sender), "Receiver Has Reach Max Limit");
+        }
+        uint256 tokenId = _tokenIdCounter.current();
+        UserProfil storage up = userProfil[tokenId][_to];
+
+        _tokenIdCounter.increment();
+        _safeMint(_to, tokenId);
+        _setTokenURI(tokenId, membershipUri);
+        isOwnerOf[_to][tokenId] = true;
+        isOwner[_to] = true;
+        up.owner = _to; 
+        up.userName = _userName; 
+        up.email = _email; 
+        up.twitterUserName = _twitterUserName; 
+
+        
+        if(!hasRole(DEFAULT_ADMIN_ROLE, msg.sender)) {
+            _revokeRole(MINTER_ROLE, msg.sender);
+        }
+        return userProfil[tokenId][_to];
+    }
+
+    //--------- Restricted ---------//
+
+        function updateUserProfil(
         uint256 _tokenId, 
         address _user, 
         UserProfil memory _newProfil
@@ -71,11 +131,7 @@ contract MemberShip is ERC721, ERC721URIStorage, Pausable, AccessControl {
             up.friendChallenged = _newProfil.friendChallenged;
         }
         return userProfil[_tokenId][_user];
-    }   
-
-    function isUserOwnerOf(address _user, uint256 _tokenId) external view returns (bool) {
-        return isOwnerOf[_user][_tokenId];
-    }
+    } 
 
     function setMaxCap(uint256 _newMaxCap) public onlyRole(DEFAULT_ADMIN_ROLE) returns (uint256) {
         return maxCap = _newMaxCap;
@@ -87,28 +143,6 @@ contract MemberShip is ERC721, ERC721URIStorage, Pausable, AccessControl {
 
     function unpause() public onlyRole(DEFAULT_ADMIN_ROLE) {
         _unpause();
-    }
-
-    function safeMint(address to, string memory uri) public onlyRole(MINTER_ROLE) {
-        if(
-            !hasRole(DEFAULT_ADMIN_ROLE, msg.sender) 
-            && !hasRole(DEFAULT_ADMIN_ROLE, to)
-        ) {
-            require(maxCap >= balanceOf(msg.sender), "Receiver Has Reach Max Limit");
-        }
-        uint256 tokenId = _tokenIdCounter.current();
-        UserProfil storage up = userProfil[tokenId][to];
-
-        _tokenIdCounter.increment();
-        _safeMint(to, tokenId);
-        _setTokenURI(tokenId, uri);
-        isOwnerOf[to][tokenId] = true;
-        isOwner[to] = true;
-        up.owner = to; 
-        
-        if(!hasRole(DEFAULT_ADMIN_ROLE, msg.sender)) {
-            _revokeRole(MINTER_ROLE, msg.sender);
-        }
     }
 
     function _beforeTokenTransfer(address from, address to, uint256 tokenId)
@@ -132,6 +166,7 @@ contract MemberShip is ERC721, ERC721URIStorage, Pausable, AccessControl {
     function _burn(uint256 tokenId) internal override(ERC721, ERC721URIStorage) {
         userProfil[tokenId][msg.sender].owner = 0x0000000000000000000000000000000000000000;
         isOwnerOf[msg.sender][tokenId] = false;
+        isOwner[msg.sender] = false;
         super._burn(tokenId);
     }
 

@@ -24,7 +24,7 @@ interface IMemberShip {
 
     }
     function updateUserProfil(uint256 _tokenId, address _user, UserProfil memory _newProfil) external returns(UserProfil memory);
-    function isUserOwnerOf(address _user, uint256 _tokenId) external view returns (bool);
+    function isOwnerOf(address _user, uint256 _tokenId) external view returns (bool);
 }
 
 contract TwitterQuest is ReentrancyGuard, AccessControl {
@@ -95,66 +95,7 @@ contract TwitterQuest is ReentrancyGuard, AccessControl {
         emit Initialized(_entryCost, _fees, _delayPeriod, _token, _memberShipAddress);
     }
 
-    function getAllParticipants() public view returns (address[] memory) {
-        return participants;
-    }
 
-    function getAllSubscribed() public view returns (address[] memory) {
-        return waitingListIndex;
-    }
-
-    function getUserWaitingListId(address _user) public view returns(uint256 i) {
-        for(i = 0; i < waitingListIndex.length; i++) {
-            if (_user == waitingListIndex[i]) {
-                return i;
-            }
-        }
-    }
-
-    function setEntryCost(uint256 _newPrice) public onlyRole(DEFAULT_ADMIN_ROLE) returns(uint256) {
-        return entryCost = _newPrice;
-    }
-
-    function setFees(uint256 _newPrice) public onlyRole(DEFAULT_ADMIN_ROLE) returns(uint256) {
-        return fees = _newPrice;
-    }
-
-    function setDelayPeriod(uint256 _newPeriod) public onlyRole(DEFAULT_ADMIN_ROLE) returns(uint256) {
-        return delayPeriod = _newPeriod;
-    }
-
-    function setEndPeriod(uint256 _newPeriod) public onlyRole(DEFAULT_ADMIN_ROLE) returns(uint256) {
-        if(_newPeriod == 0) {
-            return endPeriod = block.timestamp;
-        } else {
-            return endPeriod = _newPeriod;
-        }
-    }
-
-    function setActualQuestToken(address _actualToken) public onlyRole(DEFAULT_ADMIN_ROLE) returns(address) {
-        require(listedToken[_actualToken], "Token Not Listed !");
-        return contestEntryToken = _actualToken;
-    }
-
-    function listNewToken(address _token) public onlyRole(DEFAULT_ADMIN_ROLE) returns(bool) {
-        return listedToken[_token] = true;
-    }
-
-    function deleteToken(address _token) public onlyRole(DEFAULT_ADMIN_ROLE) returns(bool) {
-        return listedToken[_token] = false;
-    }
-
-    function setLessAddress(address _token) public onlyRole(DEFAULT_ADMIN_ROLE) returns(address) {
-        return lessAddress = _token;
-    }
-
-    function setLessReward(uint256 _newReward) public onlyRole(DEFAULT_ADMIN_ROLE) returns(uint256) {
-        return lessReward = _newReward;
-    }
-
-    function setMemberShipAddress(address _membership) public onlyRole(DEFAULT_ADMIN_ROLE) returns(address) {
-        return memberShipAddress = _membership;
-    }
 
     function registerToWaitingList() public returns (bool) {
         require(
@@ -175,12 +116,6 @@ contract TwitterQuest is ReentrancyGuard, AccessControl {
         }
     }
 
-    function isOwnerOf(
-        address _user, 
-        uint256 _tokenId
-        ) public view returns (bool) {
-        return IMemberShip(memberShipAddress).isUserOwnerOf(_user, _tokenId);
-    }
 
     function supplyToPool(
         address _token,
@@ -210,6 +145,7 @@ contract TwitterQuest is ReentrancyGuard, AccessControl {
         emit WithdrawFromPool(msg.sender, _token, _amount, block.timestamp);
         return userPoolShares[msg.sender][_token];
     }
+    //--------- Restricted ---------//
 
     function lockEntryFunds(
         address[] memory _user,
@@ -220,7 +156,7 @@ contract TwitterQuest is ReentrancyGuard, AccessControl {
         address[] memory _token
     ) public payable onlyRole(DEFAULT_ADMIN_ROLE) {
         for (uint256 i = 0; i < _user.length; i++) {
-            // require(isOwnerOf(msg.sender, _userTokenId[i]) || msg.sender == adminAddress && isOwnerOf(_user[i], _userTokenId[i]), "Not Member");
+            // require(isOwnerOf(_user[i], _userTokenId[i]), "Not Member");
             if(userPoolShares[_user[i]][_token[i]] >= _amount[i] 
                 // && poolBalance[_token[i]] >= _amount[i],
                 ) {
@@ -309,7 +245,79 @@ contract TwitterQuest is ReentrancyGuard, AccessControl {
 
     }
 
-    receive() external payable {}
+        //--------- Getter / Setter ---------//
+
+    function isOwnerOf(
+        address _user, 
+        uint256 _tokenId
+        ) public view returns (bool) {
+        return IMemberShip(memberShipAddress).isOwnerOf(_user, _tokenId);
+    }
+
+
+    function getAllParticipants() public view returns (address[] memory) {
+        return participants;
+    }
+
+    function getAllSubscribed() public view returns (address[] memory) {
+        return waitingListIndex;
+    }
+
+    function getUserWaitingListId(address _user) public view returns(uint256 i) {
+        for(i = 0; i < waitingListIndex.length; i++) {
+            if (_user == waitingListIndex[i]) {
+                return i;
+            }
+        }
+    }
+
+    function setEntryCost(uint256 _newPrice) public onlyRole(DEFAULT_ADMIN_ROLE) returns(uint256) {
+        return entryCost = _newPrice;
+    }
+
+    function setFees(uint256 _newPrice) public onlyRole(DEFAULT_ADMIN_ROLE) returns(uint256) {
+        return fees = _newPrice;
+    }
+
+    function setDelayPeriod(uint256 _newPeriod) public onlyRole(DEFAULT_ADMIN_ROLE) returns(uint256) {
+        return delayPeriod = _newPeriod;
+    }
+
+    function setEndPeriod(uint256 _newPeriod) public onlyRole(DEFAULT_ADMIN_ROLE) returns(uint256) {
+        if(_newPeriod == 0) {
+            return endPeriod = block.timestamp;
+        } else {
+            return endPeriod = _newPeriod;
+        }
+    }
+
+    function setActualQuestToken(address _actualToken) public onlyRole(DEFAULT_ADMIN_ROLE) returns(address) {
+        require(listedToken[_actualToken], "Token Not Listed !");
+        return contestEntryToken = _actualToken;
+    }
+
+    function listNewToken(address _token) public onlyRole(DEFAULT_ADMIN_ROLE) returns(bool) {
+        return listedToken[_token] = true;
+    }
+
+    function deleteToken(address _token) public onlyRole(DEFAULT_ADMIN_ROLE) returns(bool) {
+        return listedToken[_token] = false;
+    }
+
+    function setLessAddress(address _token) public onlyRole(DEFAULT_ADMIN_ROLE) returns(address) {
+        return lessAddress = _token;
+    }
+
+    function setLessReward(uint256 _newReward) public onlyRole(DEFAULT_ADMIN_ROLE) returns(uint256) {
+        return lessReward = _newReward;
+    }
+
+    function setMemberShipAddress(address _membership) public onlyRole(DEFAULT_ADMIN_ROLE) returns(address) {
+        return memberShipAddress = _membership;
+    }
+
+    //--------- Events ---------//
+
 
     event SupplyToPool(address indexed _user, address indexed _token, uint256 _amount, uint256 _date);
     event WithdrawFromPool(address indexed _user, address indexed _token, uint256 _amount, uint256 _date);
@@ -319,5 +327,6 @@ contract TwitterQuest is ReentrancyGuard, AccessControl {
     event NewCycle(uint256);
     event Initialized(uint256 _entryCost, uint256 _fees, uint256 _delayPeriod, address indexed _token, address indexed _memberShipAddress);
 
+    receive() external payable {}
 
 }
